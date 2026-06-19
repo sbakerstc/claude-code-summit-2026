@@ -57,10 +57,17 @@ slots) so database queries return interesting results.
 **Setup.** This branch adds a sprawling `src/reporting/` area (several long
 files and endpoints) and an example skill under `.claude/skills/`.
 
-**Exercise.** Tackle a task that spans the whole reporting module — large enough
-that reading everything naively would blow the context window. Practice
-`/compact`, targeted exploration, and invoking the example skill. See the task
-brief committed on that branch.
+**What's here.** A sprawling `src/reporting/` module mounted at `/reports`:
+`index.js` (endpoint inventory), `queries.js` (SQL builders), `formatters.js`
+(labels/number/CSV helpers), and three metric files — `utilization.js`,
+`revenue.js` (fabricated pricing), `capacity.js`. The endpoints are listed at
+`GET /reports/`. An example skill lives at
+`.claude/skills/reporting-explorer/`.
+
+**Exercise.** See [`docs/best-practices-task.md`](./docs/best-practices-task.md)
+for the full brief. It deliberately spans the whole module — reading everything
+naively blows the context window. Practice `/compact`, targeted exploration via
+the module map, reuse over rewrite, and invoking the `reporting-explorer` skill.
 
 ---
 

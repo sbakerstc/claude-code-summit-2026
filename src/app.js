@@ -7,6 +7,7 @@ const { loadOpenApiSpec } = require('./openapi');
 const providerRoutes = require('./routes/providers');
 const slotRoutes = require('./routes/slots');
 const bookingRoutes = require('./routes/bookings');
+const { reportingRouter } = require('./reporting');
 
 const openApiSpec = loadOpenApiSpec();
 
@@ -43,6 +44,7 @@ function createApp(db) {
   app.use('/providers', providerRoutes(db));
   app.use('/slots', slotRoutes(db));
   app.use('/bookings', bookingRoutes(db));
+  app.use('/reports', reportingRouter(db));
 
   // Fallback 404 for unknown routes.
   app.use((req, res) => {
