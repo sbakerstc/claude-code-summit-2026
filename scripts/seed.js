@@ -30,8 +30,10 @@ const LOCATIONS = [
   { name: 'Downtown Annex' },
 ];
 
-// Appointment start hours (local-naive, applied in UTC) and slot length.
-const HOURS = [9, 10, 11, 13, 14, 15];
+// Appointment start hours (applied in UTC) and slot length. The early 3:00 UTC
+// "after-hours" slot exists so weekly reports have to reckon with slots that
+// fall on a different clinic-local calendar day than their UTC day.
+const HOURS = [3, 9, 10, 11, 13, 14, 15];
 const DURATION_MIN = 30;
 
 /**

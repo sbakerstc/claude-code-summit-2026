@@ -66,12 +66,33 @@ brief committed on that branch.
 
 ## `demo/03-debugging` — the timezone off-by-one
 
-**Setup.** Slot-time handling has a multi-layer timezone bug: slots created or
-filtered near a day boundary land on the wrong calendar day, producing a real
-stack trace / failing assertion. Repro steps are committed on that branch.
+**What's here.** A new weekly-availability feature:
+`GET /availability/week?start=YYYY-MM-DD` groups the next 7 days of available
+slots into a Monday-first grid. It crashes with a real 500 on real data, but the
+existing test suite is still green (the crashing path is untested — a realistic
+"tests pass, users report a 500" situation).
 
-**Demo.** Reproduce, write a failing test that captures the bug, fix across the
-layers, and run the review loop.
+**Repro.**
+
+```bash
+npm run seed
+node scripts/repro-debugging.js      # prints HTTP 500
+# or, against the running server:
+npm start
+curl -i "http://localhost:3000/availability/week"   # 500 + stack trace in server log
+```
+
+**The bug (multi-layer, timezone off-by-one).** Slots are stored as UTC
+instants, but the clinic runs at UTC-6 (`src/lib/timeutil.js`). An early
+`03:00Z` slot converts to the *previous* clinic-local day; when that previous
+day is Sunday, `mondayFirstIndex()` returns `clinicWeekday() - 1 = -1` (it never
+wraps Sunday). The route (`src/routes/availability.js`) then does
+`byDay[-1].push(...)` on a 7-element array, and `byDay[-1]` is `undefined` →
+`TypeError: Cannot read properties of undefined (reading 'push')`.
+
+**Demo.** Reproduce, read the stack trace, follow `availability.js` back into
+`timeutil.js`, write a failing test that captures the Sunday case, fix the
+weekday mapping (wrap with `(clinicWeekday() + 6) % 7`), and run the review loop.
 
 ---
 
