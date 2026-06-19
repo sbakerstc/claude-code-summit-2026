@@ -78,8 +78,19 @@ layers, and run the review loop.
 ## `demo/05-agents` — add a waitlist (unimplemented)
 
 **Brief.** Add a waitlist so a `holder_ref` can register interest in a fully
-booked slot and be promoted when a booking is cancelled. This spans a new
-`waitlist` table (model), new routes (`POST /slots/:id/waitlist`, and promotion
-logic in `DELETE /bookings/:id`), and tests. It is intentionally left
-unimplemented on that branch — the full task brief is committed there, sized for
-orchestrating subagents and resumable, long-running work.
+booked slot and be promoted (FIFO) when a booking is cancelled. This spans a new
+`waitlist` table (model in `src/db.js`), new routes (`src/routes/waitlist.js`
+plus wire-up), and promotion logic inside `DELETE /bookings/:id`.
+
+**What's here.** The feature is **intentionally unimplemented**:
+
+- [`docs/waitlist-task.md`](./docs/waitlist-task.md) — the full brief, including
+  endpoint contracts, the FIFO promotion rule, and a suggested split across
+  three subagents.
+- `tests/waitlist.test.js` — a ready **acceptance spec**, currently wrapped in
+  `describe.skip(...)` so `npm test` stays green. It is the definition of done:
+  remove the `.skip` and make it pass.
+
+**Demo.** Orchestrate subagents (model+seed / routes / promotion+tests) against
+the brief, integrate, un-skip the tests, run `npm test`, and `/review` the diff.
+Good for showing resumable, long-running work and state carried across agents.
