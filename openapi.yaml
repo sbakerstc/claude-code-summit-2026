@@ -18,6 +18,7 @@ tags:
   - name: providers
   - name: slots
   - name: bookings
+  - name: reports
   - name: meta
 paths:
   /health:
@@ -184,6 +185,259 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /reports:
+    get:
+      tags: [reports]
+      summary: Index of every report endpoint
+      responses:
+        '200':
+          description: Report envelope whose data lists all report endpoints
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ReportEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          endpoints:
+                            type: array
+                            items:
+                              type: string
+  /reports/utilization:
+    get:
+      tags: [reports]
+      summary: Overall utilization plus a by-specialty breakdown
+      responses:
+        '200':
+          description: Report envelope
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ReportEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          overall:
+                            $ref: '#/components/schemas/UtilizationOverall'
+                          by_specialty:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UtilizationRow'
+  /reports/utilization/by-provider:
+    get:
+      tags: [reports]
+      summary: Utilization per provider
+      responses:
+        '200':
+          description: Report envelope; data is an array of utilization rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/utilization/by-location:
+    get:
+      tags: [reports]
+      summary: Utilization per location
+      responses:
+        '200':
+          description: Report envelope; data is an array of utilization rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/utilization/by-day:
+    get:
+      tags: [reports]
+      summary: Utilization per calendar day
+      responses:
+        '200':
+          description: Report envelope; data is an array of utilization rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/utilization/summary.txt:
+    get:
+      tags: [reports]
+      summary: Plain-text utilization summary
+      responses:
+        '200':
+          description: Human-readable text table
+          content:
+            text/plain:
+              schema:
+                type: string
+  /reports/revenue:
+    get:
+      tags: [reports]
+      summary: Fabricated revenue total plus a by-specialty breakdown
+      description: Revenue figures are synthetic demo numbers, not real billing.
+      responses:
+        '200':
+          description: Report envelope
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ReportEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          total:
+                            type: number
+                          total_label:
+                            type: string
+                          by_specialty:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/RevenueRow'
+  /reports/revenue/by-provider:
+    get:
+      tags: [reports]
+      summary: Fabricated revenue per provider
+      responses:
+        '200':
+          description: Report envelope; data is an array of revenue rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/revenue/by-location:
+    get:
+      tags: [reports]
+      summary: Fabricated revenue per location
+      responses:
+        '200':
+          description: Report envelope; data is an array of revenue rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/revenue/by-day:
+    get:
+      tags: [reports]
+      summary: Fabricated revenue per day over a window
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Report envelope; data is an array of per-day revenue rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/revenue/summary.txt:
+    get:
+      tags: [reports]
+      summary: Plain-text revenue summary
+      responses:
+        '200':
+          description: Human-readable text table
+          content:
+            text/plain:
+              schema:
+                type: string
+  /reports/capacity:
+    get:
+      tags: [reports]
+      summary: Forward-looking availability for the next N days
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Report envelope
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ReportEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          summary:
+                            $ref: '#/components/schemas/CapacitySummary'
+                          by_specialty:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                specialty:
+                                  type: string
+                                available_slots:
+                                  type: integer
+  /reports/capacity/by-day:
+    get:
+      tags: [reports]
+      summary: Available slots per day for the next N days
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Report envelope; data is an array of per-day availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/capacity/by-weekday:
+    get:
+      tags: [reports]
+      summary: Available slots per weekday for the next N days
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Report envelope; data is an array keyed by weekday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/capacity/by-hour:
+    get:
+      tags: [reports]
+      summary: Available slots per hour-of-day for the next N days
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Report envelope; data is an array keyed by hour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportEnvelope'
+  /reports/capacity/summary.txt:
+    get:
+      tags: [reports]
+      summary: Plain-text capacity summary
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Human-readable text table
+          content:
+            text/plain:
+              schema:
+                type: string
 components:
   schemas:
     Provider:
@@ -247,3 +501,98 @@ components:
         error:
           type: string
           example: slot 2 is already booked
+    ReportEnvelope:
+      type: object
+      description: Common wrapper every /reports endpoint returns.
+      properties:
+        report:
+          type: string
+          example: utilization.overall
+        generated_at:
+          type: string
+          format: date-time
+        disclaimer:
+          type: string
+          example: Synthetic demo data — NO PHI. Figures are fabricated for teaching.
+        params:
+          type: object
+        data:
+          description: Endpoint-specific payload (object or array).
+    UtilizationOverall:
+      type: object
+      properties:
+        total_slots:
+          type: integer
+        booked_slots:
+          type: integer
+        available_slots:
+          type: integer
+        utilization_pct:
+          type: number
+          example: 25
+        utilization_label:
+          type: string
+          example: 25.0%
+    UtilizationRow:
+      type: object
+      properties:
+        specialty:
+          type: string
+          example: Cardiology
+        total_slots:
+          type: integer
+        booked_slots:
+          type: integer
+        available_slots:
+          type: integer
+        utilization_pct:
+          type: number
+        utilization_label:
+          type: string
+    RevenueRow:
+      type: object
+      properties:
+        specialty:
+          type: string
+          example: Cardiology
+        booked_slots:
+          type: integer
+        unit_price:
+          type: number
+          example: 320
+        unit_price_label:
+          type: string
+          example: $320.00
+        revenue:
+          type: number
+        revenue_label:
+          type: string
+    CapacitySummary:
+      type: object
+      properties:
+        window_days:
+          type: integer
+          example: 14
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        total_slots:
+          type: integer
+        available_slots:
+          type: integer
+        booked_slots:
+          type: integer
+  parameters:
+    Days:
+      name: days
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 90
+        default: 14
+      description: Size of the forward window in days (1-90, default 14)
