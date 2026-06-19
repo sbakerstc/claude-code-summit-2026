@@ -16,22 +16,30 @@
 
 const { openDb } = require('../src/db');
 
+// Richer roster than `main` so database-MCP queries (e.g. "available slots next
+// week per specialty") return interesting, varied results.
 const PROVIDERS = [
   { name: 'Dr. A. Rivera', specialty: 'Cardiology' },
   { name: 'Dr. B. Chen', specialty: 'Dermatology' },
   { name: 'Dr. C. Okafor', specialty: 'Pediatrics' },
   { name: 'Dr. D. Singh', specialty: 'Cardiology' },
   { name: 'Dr. E. Larsson', specialty: 'Orthopedics' },
+  { name: 'Dr. F. Nakamura', specialty: 'Dermatology' },
+  { name: 'Dr. G. Mwangi', specialty: 'Pediatrics' },
+  { name: 'Dr. H. Petrova', specialty: 'Neurology' },
+  { name: 'Dr. I. Alvarez', specialty: 'Orthopedics' },
+  { name: 'Dr. J. Haddad', specialty: 'Neurology' },
 ];
 
 const LOCATIONS = [
   { name: 'North Clinic' },
   { name: 'South Clinic' },
   { name: 'Downtown Annex' },
+  { name: 'East Wing' },
 ];
 
 // Appointment start hours (local-naive, applied in UTC) and slot length.
-const HOURS = [9, 10, 11, 13, 14, 15];
+const HOURS = [9, 9.5, 10, 10.5, 11, 13, 13.5, 14, 14.5, 15, 15.5, 16];
 const DURATION_MIN = 30;
 
 /**
@@ -42,7 +50,9 @@ function dayAtUtc(daysFromToday, hour) {
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   d.setUTCDate(d.getUTCDate() + daysFromToday);
-  d.setUTCHours(hour, 0, 0, 0);
+  const wholeHours = Math.floor(hour);
+  const minutes = Math.round((hour - wholeHours) * 60);
+  d.setUTCHours(wholeHours, minutes, 0, 0);
   return d.toISOString();
 }
 
@@ -74,10 +84,10 @@ function seed(db) {
     let bookingSeq = 0;
     let slotCount = 0;
 
-    // Generate slots for the next 14 days (skip weekends), every provider,
+    // Generate slots for the next 21 days (skip weekends), every provider,
     // rotating through locations. Book roughly every 4th slot so there is a
-    // realistic mix of available and booked.
-    for (let day = 0; day < 14; day += 1) {
+    // realistic mix of available and booked across this week and next.
+    for (let day = 0; day < 21; day += 1) {
       const dow = new Date(dayAtUtc(day, 0)).getUTCDay();
       if (dow === 0 || dow === 6) continue; // skip Sun/Sat
 

@@ -50,6 +50,25 @@ slots) so database queries return interesting results.
 > The GitHub issues are created on the hosted repo separately from this code;
 > they are not committed here.
 
+**This branch's seed is intentionally larger** than `main`: 10 providers across
+5 specialties (Cardiology, Dermatology, Pediatrics, Orthopedics, Neurology), 4
+locations, half-hour slots, and a 3-week horizon. Run `npm run seed` to build
+`clinic.db`, then point a SQLite MCP at it.
+
+Sample query to try once the database MCP is connected:
+
+```sql
+-- Available slots next week, per specialty
+SELECT p.specialty, COUNT(*) AS available_slots
+FROM slots s
+JOIN providers p ON p.id = s.provider_id
+WHERE s.status = 'available'
+  AND s.start_time >= date('now', '+7 days')
+  AND s.start_time <  date('now', '+14 days')
+GROUP BY p.specialty
+ORDER BY available_slots DESC;
+```
+
 ---
 
 ## `workshop/03-best-practices` — context management on real bulk
