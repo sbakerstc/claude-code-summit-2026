@@ -98,32 +98,32 @@ npm test         # should be all green
 
 ```bash
 npm run seed     # only needed once, or to reset to a known state
-npm start        # serves on http://localhost:3000 (override with PORT)
+npm start        # serves on http://localhost:4000 (override with PORT)
 ```
 
-Then open **http://localhost:3000/docs** in a browser for the interactive
+Then open **http://localhost:4000/docs** in a browser for the interactive
 Swagger UI, or hit the endpoints directly.
 
 Example request (in another terminal):
 
 ```bash
-curl -s http://localhost:3000/providers
+curl -s http://localhost:4000/providers
 # [{"id":1,"name":"Dr. A. Rivera","specialty":"Cardiology"}, ...]
 
-curl -s "http://localhost:3000/slots?specialty=Cardiology&date=2026-06-22"
+curl -s "http://localhost:4000/slots?specialty=Cardiology&date=2026-06-22"
 ```
 
 Book and cancel:
 
 ```bash
 # Book slot 2 (must be available)
-curl -s -X POST http://localhost:3000/bookings \
+curl -s -X POST http://localhost:4000/bookings \
   -H 'Content-Type: application/json' \
   -d '{"slot_id": 2, "holder_ref": "PT-0001"}'
 # {"id":1,"slot_id":2,"holder_ref":"PT-0001"}
 
 # Cancel booking 1 (frees the slot)
-curl -s -X DELETE http://localhost:3000/bookings/1 -i
+curl -s -X DELETE http://localhost:4000/bookings/1 -i
 # HTTP/1.1 204 No Content
 ```
 
