@@ -10,7 +10,7 @@
 const { openDb } = require('./db');
 const { createApp } = require('./app');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 const db = openDb();
 const app = createApp(db);
