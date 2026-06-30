@@ -18,6 +18,7 @@ tags:
   - name: providers
   - name: slots
   - name: bookings
+  - name: stats
   - name: meta
 paths:
   /health:
@@ -114,6 +115,31 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SlotWithSpecialty'
+  /stats:
+    get:
+      tags: [stats]
+      summary: Daily appointment statistics
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Calendar day to report on (YYYY-MM-DD, UTC)
+      responses:
+        '200':
+          description: Statistics for the day (zeroed if the day has no slots)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyStats'
+        '400':
+          description: Missing or malformed date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /bookings:
     post:
       tags: [bookings]
@@ -241,6 +267,69 @@ components:
         holder_ref:
           type: string
           example: PT-0001
+    DailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2026-06-22'
+        totals:
+          type: object
+          properties:
+            slots:
+              type: integer
+              example: 3
+            available:
+              type: integer
+              example: 2
+            booked:
+              type: integer
+              example: 1
+        utilization:
+          type: number
+          description: booked / slots, rounded to 2 decimals (0 when no slots)
+          example: 0.33
+        by_provider:
+          type: array
+          items:
+            type: object
+            properties:
+              provider_id:
+                type: integer
+                example: 1
+              name:
+                type: string
+                example: Dr. A. Rivera
+              specialty:
+                type: string
+                example: Cardiology
+              slots:
+                type: integer
+                example: 2
+              available:
+                type: integer
+                example: 1
+              booked:
+                type: integer
+                example: 1
+        by_specialty:
+          type: array
+          items:
+            type: object
+            properties:
+              specialty:
+                type: string
+                example: Cardiology
+              slots:
+                type: integer
+                example: 2
+              available:
+                type: integer
+                example: 1
+              booked:
+                type: integer
+                example: 1
     Error:
       type: object
       properties:

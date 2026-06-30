@@ -30,11 +30,8 @@ module.exports = function bookingRoutes(db) {
     if (!slot) {
       return res.status(404).json({ error: `no slot with id ${slot_id}` });
     }
-
-    // The availability check: a slot that is already booked cannot be booked
-    // again. Without this guard, the same slot could be double-booked.
     if (slot.status !== 'available') {
-      return res.status(409).json({ error: `slot ${slot_id} is already booked` });
+      return res.status(409).json({ error: `slot ${slot_id} is not available` });
     }
 
     // Book the slot and create the booking atomically.
