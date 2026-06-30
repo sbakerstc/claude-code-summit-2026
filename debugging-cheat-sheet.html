@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debugging with Claude Code — Quick Reference</title>
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --bg:#f5f4f0; --card:#fff; --ink:#111; --mute:#777; --faint:#aaa;
+    --border:#e5e3db; --hair:#f0ede6; --blue:#185fa5; --bluebg:#e6f1fb;
+    --green:#0f6e56; --greenbg:#e1f5ee; --amber:#7a4a08; --chip:#edeae3; --navy:#0a2c54;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); padding:1.5rem;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page { max-width:900px; margin:0 auto; background:var(--card); border:0.5px solid var(--border);
+    border-radius:12px; padding:1.6rem 1.8rem; }
+  header { display:flex; align-items:baseline; justify-content:space-between; gap:1rem;
+    padding-bottom:0.9rem; border-bottom:0.5px solid var(--border); flex-wrap:wrap; }
+  h1 { font-size:21px; font-weight:600; letter-spacing:-0.02em; }
+  .sub { font-size:12px; color:var(--mute); }
+  .pill { display:inline-block; font-size:9px; font-weight:700; letter-spacing:0.1em;
+    text-transform:uppercase; color:#fff; background:var(--navy); padding:3px 9px; border-radius:20px; }
+  .loop { display:flex; gap:8px; margin-top:1.1rem; flex-wrap:wrap; }
+  .step { flex:1; min-width:120px; background:var(--bg); border:0.5px solid var(--border); border-radius:8px;
+    border-top:3px solid var(--blue); padding:8px 10px; }
+  .step:last-child { border-top-color:var(--green); }
+  .step .num { font-size:13px; font-weight:700; color:var(--blue); }
+  .step:last-child .num { color:var(--green); }
+  .step .t { font-size:12.5px; font-weight:600; margin:2px 0; }
+  .step .d { font-size:11px; color:var(--mute); line-height:1.35; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:0.9rem 1.4rem; margin-top:1.1rem; }
+  .card h2 { font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--blue); margin-bottom:0.55rem; }
+  .card.green h2 { color:var(--green); }
+  .row { display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:baseline; padding:3px 0; }
+  code { font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:11px;
+    background:var(--chip); color:var(--ink); padding:2px 6px; border-radius:4px; }
+  .desc { font-size:11.5px; color:var(--mute); line-height:1.4; }
+  .bugs { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .bug { border:0.5px solid var(--border); border-radius:8px; padding:8px 10px; }
+  .bug .lvl { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .bug .d { font-size:11px; color:var(--mute); margin-top:2px; line-height:1.3; }
+  .habit { grid-column:1 / -1; background:var(--greenbg); border-radius:8px; padding:0.7rem 1rem; }
+  .habit .big { font-size:13px; font-weight:600; color:var(--green); }
+  footer { margin-top:1.1rem; padding-top:0.8rem; border-top:0.5px solid var(--border); font-size:11px;
+    color:var(--mute); display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  footer strong { color:var(--ink); }
+  @media print { body{background:#fff;padding:0;} .page{border:none;border-radius:0;max-width:100%;padding:0.4in 0.5in;} @page{size:letter;margin:0.4in;} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div>
+      <h1>Debugging with Claude Code — Quick Reference</h1>
+      <div class="sub">Debugging, testing &amp; code review · Claude Code Summit · STChealth</div>
+    </div>
+    <span class="pill">Demo</span>
+  </header>
+
+  <div class="loop">
+    <div class="step"><div class="num">1</div><div class="t">Reproduce</div><div class="d">Run the failing test; read the error.</div></div>
+    <div class="step"><div class="num">2</div><div class="t">Explore</div><div class="d">Plan mode: understand before editing.</div></div>
+    <div class="step"><div class="num">3</div><div class="t">Fix</div><div class="d">Let Claude implement; watch the diff.</div></div>
+    <div class="step"><div class="num">4</div><div class="t">Verify</div><div class="d">Run the tests until green.</div></div>
+    <div class="step"><div class="num">5</div><div class="t">Review</div><div class="d">Fresh-context check of the change.</div></div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>Plan mode</h2>
+      <div class="row"><code>Shift+Tab</code><span class="desc">Toggle plan mode on/off</span></div>
+      <div class="row"><code>Ctrl+G</code><span class="desc">Open the plan in your editor</span></div>
+      <div class="row"><span class="desc">Claude reads &amp; proposes a plan; <strong>no edits</strong> until you approve. Use it when the fix isn't obvious or spans files.</span></div>
+    </div>
+
+    <div class="card green">
+      <h2>Verify &amp; review</h2>
+      <div class="row"><code>run the tests</code><span class="desc">Give Claude a check it can iterate against</span></div>
+      <div class="row"><code>/code-review</code><span class="desc">Fresh-context review of the diff</span></div>
+      <div class="row"><span class="desc">A second look in a clean context catches what the author (you or Claude) misses.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Course-correct</h2>
+      <div class="row"><code>Esc</code><span class="desc">Stop Claude mid-action; context kept</span></div>
+      <div class="row"><code>/rewind</code><span class="desc">Undo a wrong turn (conversation/code)</span></div>
+      <div class="row"><span class="desc">Rewind makes risky fixes cheap. Try something; roll it back if it's wrong.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Get the bugs</h2>
+      <div class="row"><code>git checkout demo/03-feature</code><span class="desc">The scenario branch</span></div>
+      <div class="row"><code>npm test</code><span class="desc">See which scenario is failing</span></div>
+      <div class="row"><code>localhost:3000/</code><span class="desc">Dashboard: watch state change</span></div>
+    </div>
+
+    <div class="bugs">
+      <div class="bug"><div class="lvl" style="color:var(--green)">Warm-up</div><div class="d">A clear logic bug with a failing test.</div></div>
+      <div class="bug"><div class="lvl" style="color:var(--blue)">Medium</div><div class="d">Spans two files: a validation or state issue.</div></div>
+      <div class="bug"><div class="lvl" style="color:var(--amber)">Spicy</div><div class="d">A real stack trace: timezone or async ordering.</div></div>
+    </div>
+
+    <div class="habit">
+      <div class="big">If you can't verify it, you're not done.</div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span><strong>Pick one, run the loop, take another.</strong> Shorter is fine; ask questions and try things.</span>
+    <span><strong>No PHI or secrets.</strong> The repo is synthetic.</span>
+  </footer>
+
+</div>
+</body>
+</html>
