@@ -30,10 +30,9 @@ module.exports = function bookingRoutes(db) {
     if (!slot) {
       return res.status(404).json({ error: `no slot with id ${slot_id}` });
     }
-
-    // TODO(workshop): this happily books the slot even if it is already booked,
-    // so the same slot can be double-booked. The fix is a small availability
-    // check here. See WORKSHOPS.md -> workshop/01-from-zero.
+    if (slot.status !== 'available') {
+      return res.status(409).json({ error: `slot ${slot_id} is not available` });
+    }
 
     // Book the slot and create the booking atomically.
     const book = db.transaction((sid, ref) => {
