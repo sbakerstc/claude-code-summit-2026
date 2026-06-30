@@ -7,6 +7,7 @@ const { loadOpenApiSpec } = require('./openapi');
 const providerRoutes = require('./routes/providers');
 const slotRoutes = require('./routes/slots');
 const bookingRoutes = require('./routes/bookings');
+const statsRoutes = require('./routes/stats');
 
 const openApiSpec = loadOpenApiSpec();
 
@@ -31,7 +32,7 @@ function createApp(db) {
       note: 'Synthetic demo data — NO PHI.',
       docs: '/docs',
       openapi: '/openapi.json',
-      endpoints: ['/health', '/providers', '/providers/:id/slots', '/slots', '/bookings'],
+      endpoints: ['/health', '/providers', '/providers/:id/slots', '/slots', '/bookings', '/stats'],
     });
   });
   app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -43,6 +44,7 @@ function createApp(db) {
   app.use('/providers', providerRoutes(db));
   app.use('/slots', slotRoutes(db));
   app.use('/bookings', bookingRoutes(db));
+  app.use('/stats', statsRoutes(db));
 
   // Fallback 404 for unknown routes.
   app.use((req, res) => {
