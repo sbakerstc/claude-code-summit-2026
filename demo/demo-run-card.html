@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State &amp; Memory Demo — Run Card</title>
+<style>
+  :root{ --ink:#111; --mute:#666; --line:#ddd; --blue:#185FA5; --green:#0F6E56; --amber:#8a5a00; --bg:#faf9f6; }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);margin:0;background:var(--bg);line-height:1.4}
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 26px}
+  h1{font-size:22px;margin:0 0 2px}
+  .sub{color:var(--mute);font-size:13px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+  .card.full{grid-column:1 / -1}
+  h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px;color:var(--blue)}
+  h2.g{color:var(--green)} h2.a{color:var(--amber)}
+  ol,ul{margin:0;padding-left:18px}
+  li{margin:3px 0;font-size:14px}
+  .beat{font-weight:600}
+  .say{color:var(--mute);font-style:italic}
+  code{font-family:Consolas,Menlo,monospace;background:#f0eee9;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  .chk li{list-style:none;margin-left:-14px}
+  .chk li::before{content:"\2610";margin-right:7px;color:var(--blue)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;background:#e6f1fb;color:var(--blue);vertical-align:middle}
+  .money{font-weight:700;color:var(--green)}
+  .callout{background:#fff8ec;border:1px solid #f0e0b8;border-radius:8px;padding:10px 12px;font-size:13.5px}
+  pre{background:#f0eee9;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:Consolas,Menlo,monospace;font-size:12px;overflow:auto;margin:6px 0 0}
+  @media print{ body{background:#fff} .card{break-inside:avoid} .wrap{padding:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Demo — State, memory &amp; long-running agents</h1>
+  <div class="sub">Day 2, 13:30&ndash;14:15 (45 min, fine to finish early) &nbsp;&middot;&nbsp; Branch <code>demo/05-agents</code> (the waitlist feature) &nbsp;&middot;&nbsp; Stephen Baker</div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>The run</h2>
+      <ol>
+        <li><span class="beat">Open</span> &mdash; <span class="say">"Agents don't have magic memory. Three kinds. Know which is which."</span></li>
+        <li><span class="beat">Working state = RAM</span> &mdash; start waitlist, <code>/context</code>, <code>/compact</code>. <span class="say">"Bloated context = worse answers."</span></li>
+        <li><span class="beat">Files = disk</span> &mdash; point at <code>CLAUDE.md</code> + auto memory. <span class="say">"Survives a new day."</span></li>
+        <li><span class="beat">Bring it back</span> &mdash; <code>claude --resume</code>. <span class="say">"Doesn't have to finish in one sitting."</span></li>
+        <li><span class="beat">Subagents</span> &mdash; hand off a chunk. <span class="say">"Reads in its own window, hands me a summary."</span></li>
+        <li><span class="beat">They get smarter</span> &mdash; <code>memory: project</code> &rarr; own MEMORY.md. <span class="say">"A worker that improves over time."</span></li>
+        <li><span class="beat">Recovery story</span> &mdash; let it drift, then <code>Esc</code> &rarr; <code>/rewind</code> &rarr; <code>/clear</code>. <span class="say">"Watch me pull it back."</span></li>
+        <li><span class="beat">Why it's safe</span> &mdash; <span class="say">"Inspectable and reversible. A test catches drift before you do."</span></li>
+        <li><span class="beat">Where it scales</span> &mdash; background agents, teams, routines. <span class="say">"Tucker's orchestration; this is the memory side."</span></li>
+        <li><span class="beat">Close</span> &mdash; <span class="say">"Three memories. Subagents keep you lean. Reversible-by-default = trust."</span></li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2 class="a">New models</h2>
+      <ul>
+        <li><span class="beat">Sonnet 5</span> <span class="pill">6/30</span> near-Opus, most agentic Sonnet. <span class="money">$2 / $10</span> intro thru Aug 31. &rarr; your default subagent model.</li>
+        <li><span class="beat">Fable 5</span> <span class="pill">7/1</span> back after export controls lifted. In-plan up to 50% of weekly limit <span class="beat">thru 7/7</span>, then usage credits (<span class="money">$10 / $50</span>). May fall back to Opus 4.8 on some coding tasks.</li>
+      </ul>
+      <div class="callout" style="margin-top:8px">"Sonnet 5 dropped yesterday, near-Opus at a fraction of the cost, so that's your default subagent model now. Fable 5 came back today at the high end. Subagents are about matching the model to the job."</div>
+    </div>
+
+    <div class="card">
+      <h2>The waitlist feature</h2>
+      <p style="font-size:13.5px;margin:0 0 6px">Let a patient join a waitlist for an already-<code>booked</code> slot; when that booking is cancelled, auto-promote the first in line (FIFO) and keep the slot <code>booked</code>. Synthetic only (<code>PT-0007</code>), no PHI.</p>
+      <div style="font-size:12.5px;color:var(--mute);margin-bottom:3px">Four high-level steps &mdash; one per subagent:</div>
+      <ol>
+        <li><span class="beat">Model</span> &mdash; add a <code>waitlist</code> table (<code>db.js</code>)</li>
+        <li><span class="beat">Routes</span> &mdash; join / list / leave endpoints (<code>waitlist.js</code>)</li>
+        <li><span class="beat">Promotion</span> &mdash; auto-promote FIFO on cancel (<code>bookings.js</code>)</li>
+        <li><span class="beat">Tests</span> &mdash; un-skip the spec, get to green</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2 class="a">The bad prompt (drift, then recover)</h2>
+      <pre>Add the waitlist feature. Do whatever
+you think is best, and while you're in
+there clean up and modernize the rest of
+the bookings code however you see fit.
+Don't bother showing me a plan.</pre>
+      <p style="font-size:12.5px;margin:6px 0 8px">Vague + invites scope creep + skips the plan &rarr; it over-reaches. Then: <code>Esc</code>, <code>/rewind</code> to the good checkpoint, <code>/clear</code>, and restart with this:</p>
+      <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.04em;margin-bottom:3px">THE GOOD PROMPT (RECOVERY)</div>
+      <pre>Add only the waitlist feature from
+docs/waitlist-task.md. Work plan-first:
+read the bookings route, the db schema,
+and the skipped waitlist test, then show
+me a short plan and wait for my OK. Don't
+touch unrelated code. After I approve:
+implement it, un-skip tests/waitlist.test.js,
+and run the suite until it's green.</pre>
+      <p style="font-size:12.5px;margin:6px 0 0">Scoped + plan-first + a clear verification gate (green tests). Same task, opposite behavior. That contrast <em>is</em> the lesson.</p>
+    </div>
+
+    <div class="card full">
+      <h2>Long-running agents: store it, checkpoint it, resume it</h2>
+      <ul>
+        <li><span class="beat">External state store</span> &mdash; durable progress lives outside the context window. Here: files (<code>CLAUDE.md</code>, a subagent's <code>MEMORY.md</code>, the on-disk session). In product

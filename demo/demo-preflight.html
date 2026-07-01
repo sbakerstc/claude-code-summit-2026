@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State &amp; Memory Demo — Preflight</title>
+<style>
+  :root{ --ink:#111; --mute:#666; --line:#ddd; --blue:#185FA5; --green:#0F6E56; --bg:#faf9f6; }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);margin:0;background:var(--bg);line-height:1.45}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 26px}
+  h1{font-size:22px;margin:0 0 2px}
+  .sub{color:var(--mute);font-size:13px;margin-bottom:18px}
+  h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--green)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+  ul{margin:0;padding-left:18px}
+  li{margin:6px 0;font-size:14px}
+  .beat{font-weight:600}
+  .chk li{list-style:none;margin-left:-14px}
+  .chk li::before{content:"\2610";margin-right:8px;color:var(--blue)}
+  code{font-family:Consolas,Menlo,monospace;background:#f0eee9;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  pre{background:#f0eee9;border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-family:Consolas,Menlo,monospace;font-size:12.5px;overflow:auto;margin:14px 0 0}
+  .note{font-size:12.5px;color:var(--mute);margin-top:14px}
+  @media print{ body{background:#fff} .wrap{padding:0} .card{border:none;padding:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Demo Preflight &mdash; State, memory &amp; long-running agents</h1>
+  <div class="sub">Run this before 13:30 &nbsp;&middot;&nbsp; Branch <code>demo/05-agents</code> &nbsp;&middot;&nbsp; Stephen Baker</div>
+
+  <div class="card">
+    <h2>Checklist</h2>
+    <ul class="chk">
+      <li><code>git checkout demo/05-agents</code> then <code>npm run seed</code> (slot dates are relative to today, so re-seed this morning)</li>
+      <li>Terminal + projector, large font; dashboard open if you'll hit endpoints</li>
+      <li><code>/model</code> &mdash; confirm <span class="beat">Sonnet 5</span> shows; know how to set a subagent to it live</li>
+      <li>Memory check: make a throwaway agent with <code>memory: project</code>, run once, confirm <code>.claude/agent-memory/</code> appears (snippet below)</li>
+      <li>Auto memory on; a <code>CLAUDE.md</code> present to point at</li>
+      <li>Recorded fallbacks ready: the <span class="beat">subagent</span> beat and the <span class="beat">recovery</span> beat</li>
+      <li>Bad prompt ready so the drift in the recovery story is reliable</li>
+      <li>Confirm <code>/context</code>, <code>/compact</code>, <code>/rewind</code> behave in your installed version</li>
+      <li>Word with Tucker: he owns orchestration in the AM, you own state / memory / recovery</li>
+      <li>Open <code>workflow-patterns.html</code> in a tab &mdash; optional visual for the context-bloat point (show at working-state, or the scaling close)</li>
+      <li>If the memory folder doesn't appear: stay conceptual, don't type the path</li>
+    </ul>
+
+    <pre>mkdir -p .claude/agents
+cat > .claude/agents/mem-test.md <<'EOF'
+---
+name: mem-test
+description: verify persistent memory
+memory: project
+---
+Note one fact about this repo in your memory, then stop.
+EOF
+# then run the mem-test agent once, and:  ls .claude/agent-memory/</pre>
+
+    <div class="note">If the folder appears, show it live during the "they get smarter" beat. If not, keep it conceptual ("its own memory on disk") and move on.</div>
+  </div>
+</div>
+</body>
+</html>

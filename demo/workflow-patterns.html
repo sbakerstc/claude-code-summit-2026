@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where context bloats &amp; what breaks</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0F1117; color: #F9FAFB; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 34px 24px; }
+  .kicker { font-family: monospace; font-size: 11px; color: #6B7280; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -.02em; }
+  .lede { color: #6B7280; margin-top: 6px; font-size: 13px; }
+  .axis { display: flex; justify-content: space-between; font-size: 10.5px; color: #4B5563; font-family: monospace; margin: 20px 0 10px; padding: 0 2px; }
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: #13161F; border: 1px solid #1F2937; border-left-width: 4px; border-radius: 10px; padding: 16px 20px; }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .rank { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .name { font-size: 16px; font-weight: 700; }
+  .sub { font-size: 12px; color: #6B7280; font-family: monospace; }
+  .load { margin-left: auto; text-align: right; flex-shrink: 0; }
+  .loadcap { font-size: 9px; font-family: monospace; color: #4B5563; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+  .loadbar { width: 110px; height: 7px; border-radius: 4px; background: #1F2937; overflow: hidden; }
+  .loadfill { height: 100%; border-radius: 4px; }
+  .body { margin-top: 14px; display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: center; }
+  @media (max-width: 640px){ .body { grid-template-columns: 1fr; } }
+  .diagbox { background: #0F1117; border: 1px solid #1F2937; border-radius: 8px; padding: 6px 8px; }
+  .rows { display: flex; flex-direction: column; gap: 9px; }
+  .row { display: flex; gap: 10px; align-items: baseline; }
+  .tag { flex-shrink: 0; width: 66px; font-size: 10px; font-family: monospace; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding-top: 2px; }
+  .txt { font-size: 13.5px; line-height: 1.5; color: #E5E7EB; }
+  .txt b { color: #fff; font-weight: 600; }
+  .demoNote { margin-top: 10px; font-size: 12px; font-style: italic; color: #EAB308; }
+  .footer { color: #6B7280; font-size: 12.5px; font-family: monospace; margin-top: 22px; text-align: center; line-height: 1.6; }
+  .footer b { color: #10B981; }
+  svg text { font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Multi-Step Workflow Patterns</div>
+  <h1>Where context bloats &amp; what breaks</h1>
+  <p class="lede">Ranked most &rarr; least token heavy. Each pattern spends context somewhere specific, and fails there first.</p>
+
+  <div class="axis"><span>&#9650; MORE TOKENS &nbsp;/&nbsp; LESS CONTROL</span><span>LESS TOKENS &nbsp;/&nbsp; MORE CONTROL &#9660;</span></div>
+
+  <div class="cards" id="cards"></div>
+
+  <p class="footer">The fix is the same everywhere:<br><b>subagents</b> to offload reading &nbsp;&middot;&nbsp; <b>/compact + /clear</b> to reclaim the window &nbsp;&middot;&nbsp; a <b>verification gate</b> to catch drift.</p>
+</div>
+
+<script>
+const workflows = [
+  { rank:1, name:"Subagent Swarm", sub:"Parallel Autonomous Agents", load:5, color:"#EF4444", diagram:"swarm",
+    bloat:"At <b>fan-out</b>. Each agent instantiates the full context, so total spend is N × everything, in parallel.",
+    breaks:"There's <b>no shared memory</b>. Agents duplicate work and hand back conflicting edits the orchestrator must reconcile." },
+  { rank:2, name:"Orchestrator + Subagents", sub:"Manager / Worker Pattern", load:4, color:"#F97316", diagram:"orchestrator",
+    bloat:"In the <b>manager's turn loop</b>. Its running history is re-sent every turn, so the window grows turn over turn (context bleed).",
+    breaks:"Early instructions get <b>diluted or evicted</b>, and stacked worker summaries blur the original goal." },
+  { rank:3, name:"Single Agent Loop", sub:"ReAct / Tool Loop", load:3, color:"#EAB308", diagram:"react",
+    bloat:"<b>Mid-loop</b>. Every tool result is appended to the one shared context, so long loops fill the window.",
+    breaks:"Early reasoning and the original goal get <b>summarized away</b> and the agent drifts.",
+    demo:"This is exactly your demo's recovery-story failure mode." },
+  { rank:4, name:"Chained Prompts", sub:"Explicit Pipeline", load:2, color:"#3B82F6", diagram:"chain",
+    bloat:"At <b>each handoff</b>, if you pass whole outputs forward (step N carries steps 1&ndash;(N-1)).",
+    breaks:"Nothing breaks automatically. The risk is <b>you forget to prune</b> between steps and cost balloons silently. You own the handoff, so it's a warning, not a failure." },
+  { rank:5, name:"Structured Output + Code", sub:"LLM as Function", load:1, color:"#10B981", diagram:"structured",
+    bloat:"<b>Effectively none</b>. One call, fixed input, schema-bounded output. Context can't accumulate.",
+    breaks:"<b>Almost nothing.</b> Only risks: input too big for a single call, or off-schema JSON." },
+];
+
+function hotspot(x,y,label,color){
+  color = color || "#EF4444";
+  return '<g><circle cx="'+x+'" cy="'+y+'" r="9" fill="none" stroke="'+color+'" stroke-width="1.2" opacity="0.5">'
+    + '<animate attributeName="r" values="6;11;6" dur="1.8s" repeatCount="indefinite"/>'
+    + '<animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.8s" repeatCount="indefinite"/></circle>'
+    + '<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+color+'"/>'
+    + '<text x="'+x+'" y="'+(y-12)+'" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+color+'">'+label+'</text></g>';
+}
+
+function diagram(kind, c){
+  const open = '<svg viewBox="0 0 200 112" style="width:100%;height:104px">';
+  if(kind==="swarm"){
+    let g = open
+      + '<rect x="80" y="5" width="40" height="22" rx="4" fill="'+c+'" opacity="0.15" stroke="'+c+'" stroke-width="1.5"/>'
+      + '<text x="100" y="20" text-anchor="middle" font-size="9" fill="'+c+'" font-weight="700">ORCH</text>';
+    [20,60,100,140,170].forEach((x,i)=>{
+      g += '<line x1="100" y1="27" x2="'+(x+15)+'" y2="55" stroke="'+c+'" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>'
+        + '<rect x="'+x+'" y="55" width="30" height="20" rx="3" fill="'+c+'" opacity="0.1" stroke="'+c+'" stroke-width="1"/>'
+        + '<text x="'+(x+15)+'" y="68" text-anchor="middle" font-size="7.5" fill="'+c+'">A'+(i+1)+'</text>';
+    });
+    return g + hotspot(100,41,"×N CONTEXT")
+      + '<text x="100" y="105" text-anchor="middle" font-size="7.5" fill="#EF4444">N agents × full context</text></svg>';
+  }
+  if(kind==="orchestrator"){
+    let g = open
+      + '<rect x="75" y="8" width="50" height="22" rx="4" fill="'+c+'" opacity="0.15" stroke="'+c+'" stroke-width="1.5"/>'
+      + '<text x="100" y="23" text-anchor="middle" font-size="9" fill="'+c+'" font-weight="700">ORCH</text>'
+      + '<path d="M 128 12 C 150 4 150 30 128 24" stroke="#EF4444" stroke-width="1.3" fill="none" opacity="0.8"/>'
+      + '<polygon points="128,21 132,26 124,26" fill="#EF4444" opacity="0.8"/>';
+    [35,100,165].forEach((x,i)=>{
+      g += '<line x1="100" y1="30" x2="'+x+'" y2="58" stroke="'+c+'" stroke-width="1.2" opacity="0.7"/>'
+        + '<rect x="'+(x-20)+'" y="58" width="40" height="22" rx="3" fill="'+c+'" opacity="0.1" stroke="'+c+'" stroke-width="1"/>'
+        + '<text x="'+x+'" y="67" text-anchor="middle" font-size="7" fill="'+c+'">'+["Retrieve","Execute","Synth"][i]+'</text>'
+        + '<text x="'+x+'" y="76" text-anchor="middle" font-size="6.5" fill="'+c+'" opacity="0.7">agent</text>';
+    });
+    return g + hotspot(100,19,"RE-SENT / TURN")
+      + '<text x="100" y="105" text-anchor="middle" font-size="7.5" fill="#EF4444">history re-sent every turn</text></svg>';
+  }
+  if(kind==="react"){
+    return open
+      + '<rect x="65" y="12" width="70" height="30" rx="5" fill="'+c+'" opacity="0.12" stroke="'+c+'" stroke-width="1.5"/>'
+      + '<text x="100" y="24" text-anchor="middle" font-size="9" fill="'+c+'" font-weight="700">AGENT</text>'
+      + '<text x="100" y="36" text-anchor="middle" font-size="7.5" fill="'+c+'" opacity="0.8">Reason → Act</text>'
+      + '<path d="M 158 27 C 188 27 188 67 158 67" stroke="#EF4444" stroke-width="1.3" fill="none" stroke-dasharray="4,2" opacity="0.8"/>'
+      + '<polygon points="158,64 152,70 162,70" fill="#EF4444" opacity="0.8"/>'
+      + '<rect x="65" y="57" width="70" height="20" rx="3" fill="'+c+'" opacity="0.08" stroke="'+c+'" stroke-width="1"/>'
+      + '<text x="100" y="70" text-anchor="middle" font-size="8" fill="'+c+'">tool calls</text>'
+      + hotspot(182,47,"FILLS/LOOP")
+      + '<text x="100" y="105" text-anchor="middle" font-size="7.5" fill="#EF4444">every tool result piles in</text></svg>';
+  }
+  if(kind==="chain"){
+    let g = open;
+    ["Step 1","Step 2","Step 3","Step 4"].forEach((label,i)=>{
+      g += '<rect x="'+(10+i*48)+'" y="28" width="38" height="28" rx="4" fill="'+c+'" opacity="0.1" stroke="'+c+'" stroke-width="1.2"/>'
+        + '<text x="'+(29+i*48)+'" y="40" text-anchor="middle" font-size="7.5" fill="'+c+'" font-weight="700">'+label+'</text>'
+        + '<text x="'+(29+i*48)+'" y="50" text-anchor="middle" font-size="6" fill="'+c+'" opacity="0.7">LLM call</text>';
+      if(i<3){
+        g += '<line x1="'+(48+i*48)+'" y1="42" x2="'+(58+i*48)+'" y2="42" stroke="'+c+'" stroke-width="1.5" opacity="0.7"/>'
+          + '<polygon points="'+(56+i*48)+',39 '+(62+i*48)+',42 '+(56+i*48)+',45" fill="'+c+'" opacity="0.7"/>';
+      }
+      g += '<rect x="'+(10+i*48)+'" y="63" width="38" height="14" rx="2" fill="#10B981" opacity="0.12" stroke="#10B981" stroke-width="0.8" stroke-dasharray="2,2"/>'
+        + '<text x="'+(29+i*48)+'" y="73" text-anchor="middle" font-size="6" fill="#10B981">prune ✓</text>';
+    });
+    return g + hotspot(82,42,"PRUNE HERE","#3B82F6")
+      + '<text x="100" y="105" text-anchor="middle" font-size="7.5" fill="#3B82F6">you control each handoff</text></svg>';
+  }
+  return open
+    + '<rect x="20" y="22" width="60" height="30" rx="4" fill="'+c+'" opacity="0.12" stroke="'+c+'" stroke-width="1.5"/>'
+    + '<text x="50" y="35" text-anchor="middle" font-size="9" fill="'+c+'" font-weight="700">LLM</text>'
+    + '<text x="50" y="46" text-anchor="middle" font-size="7" fill="'+c+'" opacity="0.8">one call</text>'
+    + '<line x1="80" y1="37" x2="110" y2="37" stroke="'+c+'" stroke-width="1.5" opacity="0.7"/>'
+    + '<polygon points="108,34 114,37 108,40" fill="'+c+'" opacity="0.7"/>'
+    + '<rect x="114" y="22" width="66" height="30" rx="4" fill="#1F2937" stroke="'+c+'" stroke-width="1.2" opacity="0.9"/>'
+    + '<text x="147" y="33" text-anchor="middle" font-size="7.5" fill="'+c+'" font-weight="700">{ json }</text>'
+    + '<text x="147" y="44" text-anchor="middle" font-size="6.5" fill="#9CA3AF">deterministic</text>'
+    + '<rect x="114" y="60" width="66" height="20" rx="3" fill="'+c+'" opacity="0.08" stroke="'+c+'" stroke-width="1"/>'
+    + '<text x="147" y="73" text-anchor="middle" font-size="7.5" fill="'+c+'">code handles rest</text>'
+    + '<line x1="147" y1="52" x2="147" y2="60" stroke="'+c+'" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>'
+    + hotspot(50,37,"BOUNDED","#10B981")
+    + '<text x="100" y="105" text-anchor="middle" font-size="7.5" fill="#10B981">context can\'t accumulate</text></svg>';
+}
+
+const container = document.getElementById("cards");
+workflows.forEach(w => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.borderLeftColor = w.color;
+
+  let html = '<div class="head">'
+    + '<div class="rank" style="background:'+w.color+'22;border:1px solid '+w.color+';color:'+w.color+'">'+w.rank+'</div>'
+    + '<div><div class="name">'+w.name+'</div><div class="sub">'+w.sub+'</div></div>'
+    + '<div class="load"><div class="loadcap">context load</div>'
+    +   '<div class="loadbar"><div class="loadfill" style="width:'+(w.load*20)+'%;background:'+w.color+'"></div></div></div>'
+    + '</div>'
+    + '<div class="body">'
+    +   '<div class="diagbox">'+diagram(w.diagram, w.color)+'</div>'
+    +   '<div><div class="rows">'
+    +     '<div class="row"><div class="tag" style="color:#F59E0B">&#9650; Bloats</div><div class="txt">'+w.bloat+'</div></div>'
+    +     '<div class="row"><div class="tag" style="color:#EF4444">&#10007; Breaks</div><div class="txt">'+w.breaks+'</div></div>'
+    +   '</div>'
+    +   (w.demo ? '<div class="demoNote">&#9733; '+w.demo+'</div>' : '')
+    +   '</div>'
+    + '</div>';
+  card.innerHTML = html;
+  container.appendChild(card);
+});
+</script>
+</body>
+</html>
