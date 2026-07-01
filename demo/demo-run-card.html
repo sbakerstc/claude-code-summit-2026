@@ -10,7 +10,7 @@
   .wrap{max-width:1000px;margin:0 auto;padding:22px 26px}
   h1{font-size:22px;margin:0 0 2px}
   .sub{color:var(--mute);font-size:13px;margin-bottom:14px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
   .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
   .card.full{grid-column:1 / -1}
   h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px;color:var(--blue)}
@@ -48,7 +48,7 @@
         <li><span class="beat">Recovery story</span> &mdash; let it drift, then <code>Esc</code> &rarr; <code>/rewind</code> &rarr; <code>/clear</code>. <span class="say">"Watch me pull it back."</span></li>
         <li><span class="beat">Why it's safe</span> &mdash; <span class="say">"Inspectable and reversible. A test catches drift before you do."</span></li>
         <li><span class="beat">Where it scales</span> &mdash; background agents, teams, routines. <span class="say">"Tucker's orchestration; this is the memory side."</span></li>
-        <li><span class="beat">Close</span> &mdash; <span class="say">"Three memories. Subagents keep you lean. Reversible-by-default = trust."</span></li>
+        <li><span class="beat">Close</span> &mdash; <span class="say">"Three memories. Subagents keep your main context lean. Reversible-by-default = trust."</span></li>
       </ol>
     </div>
 
@@ -59,6 +59,17 @@
         <li><span class="beat">Fable 5</span> <span class="pill">7/1</span> back after export controls lifted. In-plan up to 50% of weekly limit <span class="beat">thru 7/7</span>, then usage credits (<span class="money">$10 / $50</span>). May fall back to Opus 4.8 on some coding tasks.</li>
       </ul>
       <div class="callout" style="margin-top:8px">"Sonnet 5 dropped yesterday, near-Opus at a fraction of the cost, so that's your default subagent model now. Fable 5 came back today at the high end. Subagents are about matching the model to the job."</div>
+    </div>
+
+    <div class="card">
+      <h2 class="a">Prompt caching &mdash; warm vs cold</h2>
+      <ul>
+        <li>Cache lives <span class="beat">at the model provider</span>, not on your machine. It reuses the tokens the model already processed.</li>
+        <li><span class="beat">Cold</span> &mdash; first call: model processes the whole prefix, full price, writes the cache.</li>
+        <li><span class="beat">Warm</span> &mdash; identical prefix on the next call: cache hit, cheaper + faster.</li>
+        <li>Keep <code>CLAUDE.md</code> + setup stable so the prefix stays byte-identical (any change &rarr; cold).</li>
+      </ul>
+      <div class="callout" style="margin-top:8px">Example: system prompt + <code>CLAUDE.md</code> + tool defs + the big file you loaded = the cached prefix, held on the API side. Ask 5 follow-ups in a row &rarr; 1 cold (builds it), 4 warm (cheap). Edit anything in that prefix &rarr; cold again.</div>
     </div>
 
     <div class="card">
@@ -93,7 +104,4 @@ and run the suite until it's green.</pre>
       <p style="font-size:12.5px;margin:6px 0 0">Scoped + plan-first + a clear verification gate (green tests). Same task, opposite behavior. That contrast <em>is</em> the lesson.</p>
     </div>
 
-    <div class="card full">
-      <h2>Long-running agents: store it, checkpoint it, resume it</h2>
-      <ul>
-        <li><span class="beat">External state store</span> &mdash; durable progress lives outside the context window. Here: files (<code>CLAUDE.md</code>, a subagent's <code>MEMORY.md</code>, the on-disk session). In product
+    <div class="card full"
